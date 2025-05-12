@@ -1,6 +1,6 @@
-import express from 'express';
-import dotenv from 'dotenv';
-import { Configuration, OpenAIApi } from 'openai';
+const express = require('express');
+const dotenv = require('dotenv');
+const { Configuration, OpenAIApi } = require('openai');
 
 dotenv.config();
 
