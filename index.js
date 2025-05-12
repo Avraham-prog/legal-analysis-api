@@ -1,16 +1,15 @@
 const express = require('express');
 const dotenv = require('dotenv');
-const { Configuration, OpenAIApi } = require('openai');
+const { OpenAIApi } = require('openai');
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
 
-const configuration = new Configuration({
+const openai = new OpenAIApi({
   apiKey: process.env.OPENAI_API_KEY,
 });
-const openai = new OpenAIApi(configuration);
 
 app.post('/analyze', async (req, res) => {
   const { url } = req.body;
@@ -31,7 +30,7 @@ app.post('/analyze', async (req, res) => {
 סכם את עמדתך המשפטית בשפה פשוטה למנהלי שיווק.`;
 
   try {
-    const completion = await openai.createChatCompletion({
+    const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [
         { role: 'system', content: 'אתה עורך דין מומחה בזכויות יוצרים' },
@@ -40,7 +39,7 @@ app.post('/analyze', async (req, res) => {
       temperature: 0.4
     });
 
-    const answer = completion.data.choices[0].message.content;
+    const answer = completion.choices[0].message.content;
     res.json({ summary: answer });
   } catch (err) {
     console.error('OpenAI error:', err);
