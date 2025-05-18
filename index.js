@@ -7,20 +7,31 @@ dotenv.config();
 
 const app = express();
 
-// CORS configuration to allow requests from Vercel frontend
-app.use(cors({
-  origin: 'https://copyright-checker.vercel.app',
-  methods: ['POST', 'GET', 'OPTIONS'],
-  credentials: false
-}));
+// Middlewares
+const allowedOrigins = [
+  'https://copyright-checker.vercel.app',
+  'https://copyright-checker-p8on364h-avrahams-projects-793b488c.vercel.app',
+  'https://copyright-checker-beige.vercel.app'
+];
 
-// Middleware to parse JSON
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+  })
+);
+
 app.use(express.json());
 
-// API routes
+// Routes
 app.use('/api/legal-assistant', legalAssistantRouter);
 
-// Server start
+// Server Start
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`Legal API running on port ${PORT}`);
