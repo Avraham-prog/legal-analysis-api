@@ -18,6 +18,7 @@ app.use(
   cors({
     origin: function (origin, callback) {
       console.log("🔍 בקשה הגיעה מ־Origin:", origin);
+      console.log("📌 רשימת origins מותרים:", allowedOrigins);
       if (!origin || allowedOrigins.includes(origin)) {
         console.log("✅ מאושר על ידי CORS");
         callback(null, true);
