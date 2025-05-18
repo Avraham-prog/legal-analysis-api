@@ -36,11 +36,20 @@ ${prompt}${fileInfo}
 נא נתח את הסיכון המשפטי, התייחס למקורות חוקיים ופסיקה רלוונטית אם יש, וציין האם נדרש רישיון, אישור או שינוי כלשהו.
 סיים את התשובה בהמלצה ברורה בשפה פשוטה.`;
 
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4',
-        messages: [{ role: 'user', content: fullPrompt }],
-        temperature: 0.5,
-      });
+    const response = await openai.chat.completions.create({
+  model: "gpt-4-vision-preview",
+  messages: [
+    {
+      role: "user",
+      content: [
+        { type: "text", text: prompt || "נתח את התמונה המצורפת" },
+        ...(image ? [{ type: "image_url", image_url: { url: image } }] : []),
+      ],
+    },
+  ],
+  max_tokens: 1000,
+});
+
 
       const summary = response.choices[0]?.message?.content || '❌ לא התקבלה תשובה מהשרת המשפטי.';
       res.json({ summary });
