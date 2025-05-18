@@ -7,16 +7,20 @@ dotenv.config();
 
 const app = express();
 
-// Middlewares
+// CORS configuration to allow requests from Vercel frontend
 app.use(cors({
-  origin: "https://copyright-checker-beige.vercel.app"
+  origin: 'https://copyright-checker.vercel.app',
+  methods: ['POST', 'GET', 'OPTIONS'],
+  credentials: false
 }));
+
+// Middleware to parse JSON
 app.use(express.json());
 
-// Routes
+// API routes
 app.use('/api/legal-assistant', legalAssistantRouter);
 
-// Server Start
+// Server start
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`Legal API running on port ${PORT}`);
