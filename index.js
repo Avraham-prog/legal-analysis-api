@@ -8,7 +8,9 @@ dotenv.config();
 const app = express();
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: "https://copyright-checker-beige.vercel.app"
+}));
 app.use(express.json());
 
 // Routes
