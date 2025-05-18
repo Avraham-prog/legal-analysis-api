@@ -3,7 +3,6 @@ import formidable from 'formidable';
 import { OpenAI } from 'openai';
 
 const router = express.Router();
-
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 router.post('/', (req, res) => {
@@ -16,15 +15,18 @@ router.post('/', (req, res) => {
     }
 
     const prompt = fields.prompt;
+    const image = fields.image; // URL לתמונה מ־Cloudinary
     const file = files.file;
 
-    if (!prompt && !file) {
-      return res.status(400).json({ error: 'Missing prompt or file' });
+    if (!prompt && !file && !image) {
+      return res.status(400).json({ error: 'Missing prompt or content' });
     }
 
     let fileInfo = '';
     if (file && file.originalFilename) {
-      fileInfo = `\n\nהמשתמש העלה קובץ בשם \"${file.originalFilename}\". יש לבדוק האם יש חשש להפרת זכויות יוצרים בקובץ זה.`;
+      fileInfo = `\n\nהמשתמש העלה קובץ בשם "${file.originalFilename}". יש לבדוק האם יש חשש להפרת זכויות יוצרים בקובץ זה.`;
+    } else if (image) {
+      fileInfo = `\n\nהמשתמש העלה תמונה לבדיקה. יש לבדוק האם יש חשש להפרת זכויות יוצרים בתמונה זו.`;
     }
 
     try {
@@ -36,20 +38,21 @@ ${prompt}${fileInfo}
 נא נתח את הסיכון המשפטי, התייחס למקורות חוקיים ופסיקה רלוונטית אם יש, וציין האם נדרש רישיון, אישור או שינוי כלשהו.
 סיים את התשובה בהמלצה ברורה בשפה פשוטה.`;
 
-    const response = await openai.chat.completions.create({
-  model: "gpt-4-vision-preview",
-  messages: [
-    {
-      role: "user",
-      content: [
-        { type: "text", text: prompt || "נתח את התמונה המצורפת" },
-        ...(image ? [{ type: "image_url", image_url: { url: image } }] : []),
-      ],
-    },
-  ],
-  max_tokens: 1000,
-});
+      const messages = [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: fullPrompt },
+            ...(image ? [{ type: "image_url", image_url: { url: image } }] : [])
+          ]
+        }
+      ];
 
+      const response = await openai.chat.completions.create({
+        model: "gpt-4-vision-preview",
+        messages,
+        max_tokens: 1000,
+      });
 
       const summary = response.choices[0]?.message?.content || '❌ לא התקבלה תשובה מהשרת המשפטי.';
       res.json({ summary });
