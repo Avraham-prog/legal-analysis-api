@@ -17,16 +17,19 @@ router.post("/legal-assistant", (req, res) => {
       return res.status(500).json({ error: "Form parsing failed" });
     }
 
-    const prompt = fields.prompt;
+    const prompt = fields.prompt?.[0] || "";
+    const fileUrl = fields.fileUrl?.[0] || null;
     const file = files.file;
 
-    if (!prompt && !file) {
-      return res.status(400).json({ error: "Missing prompt or file" });
+    if (!prompt && !fileUrl && !file) {
+      return res.status(400).json({ error: "Missing prompt or file input" });
     }
 
     let fileInfo = "";
-    if (file) {
-      fileInfo = `\n\nהמשתמש העלה קובץ בשם \"${file.originalFilename}\". יש לבדוק האם יש חשש להפרת זכויות יוצרים בקובץ זה.`;
+    if (fileUrl) {
+      fileInfo = `\n\nהמשתמש הזין קישור לקובץ: ${fileUrl}`;
+    } else if (file?.originalFilename) {
+      fileInfo = `\n\nהמשתמש העלה קובץ בשם \"${file.originalFilename}\".`;
     }
 
     try {
@@ -45,7 +48,6 @@ ${prompt}${fileInfo}
       });
 
       const summary = response.choices[0]?.message?.content || "❌ לא התקבלה תשובה מהשרת המשפטי.";
-
       res.json({ summary });
     } catch (e) {
       console.error("OpenAI error:", e);
