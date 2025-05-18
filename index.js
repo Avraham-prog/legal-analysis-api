@@ -17,9 +17,12 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
+      console.log("🔍 בקשה הגיעה מ־Origin:", origin);
       if (!origin || allowedOrigins.includes(origin)) {
+        console.log("✅ מאושר על ידי CORS");
         callback(null, true);
       } else {
+        console.error("❌ חסום על ידי CORS:", origin);
         callback(new Error('Not allowed by CORS'));
       }
     },
