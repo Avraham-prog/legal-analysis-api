@@ -31,7 +31,6 @@ ${prompt}
 
      const response = await openai.chat.completions.create({
   model: imageUrl ? "gpt-4o" : "gpt-4",
-  ...
 });
         messages: [
           {
