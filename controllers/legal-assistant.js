@@ -23,15 +23,15 @@ router.post('/', (req, res) => {
 
     try {
       const fullPrompt = `
-אתה עורך דין מומחה לדיני קניין רוחני וזכויות יוצרים בישראל, ארה\"ב ואירופה. המשתמש מבקש לבדוק האם יש בעיה משפטית בשימוש הבא:
+אתה עורך דין מומחה לדיני קניין רוחני וזכויות יוצרים בישראל, ארה"ב ואירופה. המשתמש מבקש לבדוק האם יש בעיה משפטית בשימוש הבא:
 
 ${prompt}
 
-אם צורפה תמונה, נא לנתח את התוכן גם לפי ההקשר החזותי.`;
+אם צורפה תמונה, נא לנתח את התוכן גם לפי ההקשר החזותי.
+      `.trim();
 
-     const response = await openai.chat.completions.create({
-  model: imageUrl ? "gpt-4o" : "gpt-4",
-});
+      const response = await openai.chat.completions.create({
+        model: image ? "gpt-4o" : "gpt-4",
         messages: [
           {
             role: 'user',
