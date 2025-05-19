@@ -29,8 +29,10 @@ ${prompt}
 
 אם צורפה תמונה, נא לנתח את התוכן גם לפי ההקשר החזותי.`;
 
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4-vision-preview',
+     const response = await openai.chat.completions.create({
+  model: imageUrl ? "gpt-4o" : "gpt-4",
+  ...
+});
         messages: [
           {
             role: 'user',
