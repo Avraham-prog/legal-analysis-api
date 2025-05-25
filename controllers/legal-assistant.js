@@ -1,3 +1,4 @@
+// controllers/legal-assistant.js (CommonJS style)
 const express = require("express");
 const router = express.Router();
 const formidable = require("formidable");
@@ -7,7 +8,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-router.post("/legal-assistant", (req, res) => {
+router.post("/", (req, res) => {
   const form = formidable({ multiples: false });
 
   form.parse(req, async (err, fields) => {
@@ -17,8 +18,7 @@ router.post("/legal-assistant", (req, res) => {
     }
 
     const prompt = fields.prompt;
-    const imageRaw = fields.image;
-    const image = Array.isArray(imageRaw) ? imageRaw[0] : imageRaw;
+    const image = fields.image;
 
     if (!prompt && !image) {
       return res.status(400).json({ error: "Missing prompt or image" });
