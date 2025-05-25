@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Legal assistant API using Express and OpenAI",
   "main": "index.js",
+  "type": "commonjs",
   "scripts": {
     "start": "node index.js"
   },
@@ -15,5 +16,6 @@
   },
   "engines": {
     "node": ">=20.0.0"
-  }
+  },
+  "license": "MIT"
 }
