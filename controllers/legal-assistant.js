@@ -44,7 +44,7 @@ router.post("/", (req, res) => {
         {
           role: "user",
           content: [
-            { type: "text", text: String(prompt) },
+            ...(prompt ? [{ type: "text", text: String(prompt) }] : []),
             ...(image ? [{ type: "image_url", image_url: { url: String(image) } }] : [])
           ]
         }
