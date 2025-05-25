@@ -1,7 +1,8 @@
-import express from 'express';
-import dotenv from 'dotenv';
-import cors from 'cors';
-import legalAssistantRouter from './controllers/legal-assistant.js';
+// index.js (CommonJS style)
+const express = require('express');
+const dotenv = require('dotenv');
+const cors = require('cors');
+const legalAssistantRouter = require('./controllers/legal-assistant');
 
 dotenv.config();
 
