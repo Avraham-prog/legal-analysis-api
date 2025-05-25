@@ -1,7 +1,6 @@
-// controllers/legal-assistant.js (CommonJS style)
 const express = require("express");
 const router = express.Router();
-const formidable = require("formidable");
+const { IncomingForm } = require("formidable");
 const { OpenAI } = require("openai");
 
 const openai = new OpenAI({
@@ -9,7 +8,7 @@ const openai = new OpenAI({
 });
 
 router.post("/", (req, res) => {
-  const form = formidable({ multiples: false });
+  const form = new IncomingForm({ multiples: false });
 
   form.parse(req, async (err, fields) => {
     if (err) {
