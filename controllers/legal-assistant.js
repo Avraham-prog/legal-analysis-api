@@ -3,9 +3,7 @@ const router = express.Router();
 const { IncomingForm } = require("formidable");
 const { OpenAI } = require("openai");
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 router.post("/", (req, res) => {
   const form = new IncomingForm({ multiples: false });
@@ -24,18 +22,15 @@ router.post("/", (req, res) => {
     }
 
     try {
-      const fullPrompt = `
-אתה עורך דין מומחה לדיני קניין רוחני וזכויות יוצרים בישראל, ארה\"ב ואירופה. המשתמש מבקש לבדוק האם יש בעיה משפטית בשימוש הבא:
-
-${prompt}
-
-אם צורפה תמונה או מדיה, נא נתח את התוכן גם לפי ההקשר החזותי.`;
-
       const messages = [
+        {
+          role: "system",
+          content: `אתה עורך דין מומחה לדיני קניין רוחני וזכויות יוצרים בישראל, ארה\"ב ואירופה. עליך לנתח את השאלה או התיאור שמספק המשתמש, ואם צורפה תמונה – נתח אותה גם כן. אם אין בעיה משפטית, נא לציין זאת בפירוש.`,
+        },
         {
           role: "user",
           content: [
-            { type: "text", text: fullPrompt },
+            { type: "text", text: String(prompt) },
             ...(image ? [{ type: "image_url", image_url: { url: String(image) } }] : []),
           ],
         },
