@@ -17,7 +17,8 @@ router.post("/legal-assistant", (req, res) => {
     }
 
     const prompt = fields.prompt;
-    const image = fields.image;
+    const imageRaw = fields.image;
+    const image = Array.isArray(imageRaw) ? imageRaw[0] : imageRaw;
 
     if (!prompt && !image) {
       return res.status(400).json({ error: "Missing prompt or image" });
