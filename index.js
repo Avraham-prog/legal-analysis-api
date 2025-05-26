@@ -11,6 +11,7 @@ const app = express();
 const allowedOrigins = [
   'https://copyright-checker.vercel.app',
   'https://copyright-checker-p8on364h-avrahams-projects-793b488c.vercel.app',
+  'https://copyright-checker-g6qp4u9gs-avrahams-projects-793b488c.vercel.app',
   'https://copyright-checker-beige.vercel.app',
   'https://copyright-checker-3qgp4a7qy-avrahams-projects-793b488c.vercel.app',
   'https://copyright-checker-kmkhkrqc9-avrahams-projects-793b488c.vercel.app'
