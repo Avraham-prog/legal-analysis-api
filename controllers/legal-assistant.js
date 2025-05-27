@@ -48,10 +48,15 @@ router.post("/", (req, res) => {
         try {
           const history = JSON.parse(historyRaw);
           history.forEach((msg) => {
-            if (msg.type === "user" || msg.type === "bot") {
+            if (msg.type === "user") {
               messages.push({
-                role: msg.type === "user" ? "user" : "assistant",
-                content: msg.type === "user" ? msg.prompt : msg.response,
+                role: "user",
+                content: [{ type: "text", text: msg.prompt }]
+              });
+            } else if (msg.type === "bot") {
+              messages.push({
+                role: "assistant",
+                content: msg.response
               });
             }
           });
@@ -60,23 +65,21 @@ router.post("/", (req, res) => {
         }
       }
 
-      const content = image
-        ? [
-            ...(prompt ? [{ type: "text", text: String(prompt) }] : []),
-            ...(image ? [{ type: "image_url", image_url: { url: String(image) } }] : []),
-          ]
-        : String(prompt);
+      const contentArray = [
+        ...(prompt ? [{ type: "text", text: String(prompt) }] : []),
+        ...(image ? [{ type: "image_url", image_url: { url: String(image) } }] : [])
+      ];
 
       messages.push({
         role: "user",
-        content,
+        content: contentArray
       });
 
       const response = await openai.chat.completions.create({
         model: image ? "gpt-4o" : "gpt-4",
         messages,
         temperature: 0.5,
-        max_tokens: 1000,
+        max_tokens: 1000
       });
 
       const summary = response.choices[0]?.message?.content || "❌ לא התקבלה תשובה מהשרת המשפטי.";
