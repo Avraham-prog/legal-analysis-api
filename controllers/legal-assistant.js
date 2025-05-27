@@ -26,6 +26,13 @@ const fetchImageAsBase64 = async (url) => {
   }
 };
 
+const messageHasImage = (messages) => {
+  return messages.some((msg) =>
+    Array.isArray(msg.content) &&
+    msg.content.some((item) => item.type === "image_url")
+  );
+};
+
 router.post("/", (req, res) => {
   const form = new IncomingForm({ multiples: false });
 
@@ -129,8 +136,10 @@ router.post("/", (req, res) => {
       console.log("📤 messages שנשלחות ל־OpenAI:");
       console.dir(messages, { depth: null });
 
+      const useGpt4o = messageHasImage(messages);
+
       const response = await openai.chat.completions.create({
-        model: image ? "gpt-4o" : "gpt-4",
+        model: useGpt4o ? "gpt-4o" : "gpt-4",
         messages,
         temperature: 0.5,
         max_tokens: 1000
