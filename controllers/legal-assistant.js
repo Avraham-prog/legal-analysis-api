@@ -5,6 +5,15 @@ const { OpenAI } = require("openai");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// פונקציה לבדוק אם URL של תמונה חוקי
+const isValidImageUrl = (url) => {
+  return (
+    typeof url === "string" &&
+    (url.startsWith("https://") || url.startsWith("data:image/")) &&
+    /\.(jpg|jpeg|png|gif|webp)$/i.test(url)
+  );
+};
+
 router.post("/", (req, res) => {
   const form = new IncomingForm({ multiples: false });
 
@@ -45,22 +54,24 @@ router.post("/", (req, res) => {
 אם לא ניתן לחוות דעה משפטית, הסבר מדוע ואילו פרטים חסרים.`
       });
 
-      // שחזור ההיסטוריה
+      // שחזור היסטוריה
       if (historyRaw) {
         try {
           const history = JSON.parse(historyRaw);
           history.forEach((msg) => {
             if (msg.type === "user") {
               const content = [];
-              if (msg.prompt) content.push({ type: "text", text: msg.prompt });
-              if (msg.imageUrl) content.push({ type: "image_url", image_url: { url: msg.imageUrl } });
+              if (msg.prompt) {
+                content.push({ type: "text", text: msg.prompt });
+              }
+              if (isValidImageUrl(msg.imageUrl)) {
+                content.push({ type: "image_url", image_url: { url: msg.imageUrl } });
+              }
               if (content.length > 0) {
                 messages.push({ role: "user", content });
               }
-            } else if (msg.type === "bot") {
-              if (msg.response) {
-                messages.push({ role: "assistant", content: msg.response });
-              }
+            } else if (msg.type === "bot" && msg.response) {
+              messages.push({ role: "assistant", content: msg.response });
             }
           });
         } catch (e) {
@@ -69,10 +80,15 @@ router.post("/", (req, res) => {
       }
 
       // הודעת המשתמש הנוכחית
-      const contentArray = [
-        ...(prompt ? [{ type: "text", text: String(prompt) }] : []),
-        ...(image ? [{ type: "image_url", image_url: { url: String(image) } }] : [])
-      ];
+      const contentArray = [];
+
+      if (prompt) {
+        contentArray.push({ type: "text", text: String(prompt) });
+      }
+
+      if (isValidImageUrl(image)) {
+        contentArray.push({ type: "image_url", image_url: { url: String(image) } });
+      }
 
       if (contentArray.length > 0) {
         messages.push({ role: "user", content: contentArray });
