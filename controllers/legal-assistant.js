@@ -25,6 +25,7 @@ router.post("/", (req, res) => {
     try {
       const messages = [];
 
+      // הודעת מערכת
       messages.push({
         role: "system",
         content: `אתה עורך דין מומחה לדיני זכויות יוצרים, סימני מסחר וקניין רוחני לפי הדין בישראל, ארצות הברית והאיחוד האירופי.
@@ -44,20 +45,22 @@ router.post("/", (req, res) => {
 אם לא ניתן לחוות דעה משפטית, הסבר מדוע ואילו פרטים חסרים.`
       });
 
+      // שחזור ההיסטוריה
       if (historyRaw) {
         try {
           const history = JSON.parse(historyRaw);
           history.forEach((msg) => {
             if (msg.type === "user") {
-              messages.push({
-                role: "user",
-                content: [{ type: "text", text: msg.prompt }]
-              });
+              const content = [];
+              if (msg.prompt) content.push({ type: "text", text: msg.prompt });
+              if (msg.imageUrl) content.push({ type: "image_url", image_url: { url: msg.imageUrl } });
+              if (content.length > 0) {
+                messages.push({ role: "user", content });
+              }
             } else if (msg.type === "bot") {
-              messages.push({
-                role: "assistant",
-                content: msg.response
-              });
+              if (msg.response) {
+                messages.push({ role: "assistant", content: msg.response });
+              }
             }
           });
         } catch (e) {
@@ -65,16 +68,17 @@ router.post("/", (req, res) => {
         }
       }
 
+      // הודעת המשתמש הנוכחית
       const contentArray = [
         ...(prompt ? [{ type: "text", text: String(prompt) }] : []),
         ...(image ? [{ type: "image_url", image_url: { url: String(image) } }] : [])
       ];
 
-      messages.push({
-        role: "user",
-        content: contentArray
-      });
+      if (contentArray.length > 0) {
+        messages.push({ role: "user", content: contentArray });
+      }
 
+      // בקשת OpenAI
       const response = await openai.chat.completions.create({
         model: image ? "gpt-4o" : "gpt-4",
         messages,
