@@ -5,7 +5,7 @@ const { OpenAI } = require("openai");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// פונקציה לבדוק אם URL של תמונה חוקי
+// בדיקת תקפות URL של תמונה
 const isValidImageUrl = (url) => {
   return (
     typeof url === "string" &&
@@ -64,7 +64,12 @@ router.post("/", (req, res) => {
               if (msg.prompt) {
                 content.push({ type: "text", text: msg.prompt });
               }
-              if (isValidImageUrl(msg.imageUrl)) {
+              if (
+                msg.imageUrl &&
+                typeof msg.imageUrl === "string" &&
+                (msg.imageUrl.startsWith("https://") || msg.imageUrl.startsWith("data:image/")) &&
+                /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.imageUrl)
+              ) {
                 content.push({ type: "image_url", image_url: { url: msg.imageUrl } });
               }
               if (content.length > 0) {
@@ -93,6 +98,10 @@ router.post("/", (req, res) => {
       if (contentArray.length > 0) {
         messages.push({ role: "user", content: contentArray });
       }
+
+      // הדפסת debug למעקב
+      console.log("\uD83D\uDCE4 messages שנשלחות ל־OpenAI:");
+      console.dir(messages, { depth: null });
 
       // בקשת OpenAI
       const response = await openai.chat.completions.create({
