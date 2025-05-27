@@ -2,16 +2,28 @@ const express = require("express");
 const router = express.Router();
 const { IncomingForm } = require("formidable");
 const { OpenAI } = require("openai");
+const axios = require("axios");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// בדיקת תקפות URL של תמונה
 const isValidImageUrl = (url) => {
   return (
     typeof url === "string" &&
-    (url.startsWith("https://") || url.startsWith("data:image/")) &&
+    url.startsWith("https://") &&
     /\.(jpg|jpeg|png|gif|webp)$/i.test(url)
   );
+};
+
+const fetchImageAsBase64 = async (url) => {
+  try {
+    const response = await axios.get(url, { responseType: "arraybuffer" });
+    const base64 = Buffer.from(response.data).toString("base64");
+    const mime = response.headers["content-type"];
+    return `data:${mime};base64,${base64}`;
+  } catch (e) {
+    console.warn("⚠️ שגיאה בהמרת תמונה ל-base64:", e.message);
+    return null;
+  }
 };
 
 router.post("/", (req, res) => {
@@ -34,7 +46,6 @@ router.post("/", (req, res) => {
     try {
       const messages = [];
 
-      // הודעת מערכת
       messages.push({
         role: "system",
         content: `אתה עורך דין מומחה לדיני זכויות יוצרים, סימני מסחר וקניין רוחני לפי הדין בישראל, ארצות הברית והאיחוד האירופי.
@@ -54,18 +65,20 @@ router.post("/", (req, res) => {
 אם לא ניתן לחוות דעה משפטית, הסבר מדוע ואילו פרטים חסרים.`
       });
 
-      // שחזור היסטוריה
       if (historyRaw) {
         try {
           const history = JSON.parse(historyRaw);
-          history.forEach((msg) => {
+          for (const msg of history) {
             if (msg.type === "user") {
               const content = [];
               if (msg.prompt) {
                 content.push({ type: "text", text: msg.prompt });
               }
               if (isValidImageUrl(msg.imageUrl)) {
-                content.push({ type: "image_url", image_url: { url: msg.imageUrl } });
+                const base64Image = await fetchImageAsBase64(msg.imageUrl);
+                if (base64Image) {
+                  content.push({ type: "image_url", image_url: { url: base64Image } });
+                }
               }
               if (content.length > 0) {
                 messages.push({ role: "user", content });
@@ -73,13 +86,12 @@ router.post("/", (req, res) => {
             } else if (msg.type === "bot" && msg.response) {
               messages.push({ role: "assistant", content: msg.response });
             }
-          });
+          }
         } catch (e) {
           console.warn("⚠️ שגיאה בפירוק ההיסטוריה:", e.message);
         }
       }
 
-      // הודעת המשתמש הנוכחית
       const contentArray = [];
 
       if (prompt) {
@@ -87,14 +99,16 @@ router.post("/", (req, res) => {
       }
 
       if (isValidImageUrl(image)) {
-        contentArray.push({ type: "image_url", image_url: { url: String(image) } });
+        const base64Image = await fetchImageAsBase64(image);
+        if (base64Image) {
+          contentArray.push({ type: "image_url", image_url: { url: base64Image } });
+        }
       }
 
       if (contentArray.length > 0) {
         messages.push({ role: "user", content: contentArray });
       }
 
-      // סינון נוסף לכל הודעה לפני שליחה ל-OpenAI
       messages.forEach((msg) => {
         if (Array.isArray(msg.content)) {
           msg.content = msg.content.filter((item) => {
@@ -103,8 +117,7 @@ router.post("/", (req, res) => {
               item.type === "image_url" &&
               item.image_url &&
               typeof item.image_url.url === "string" &&
-              (item.image_url.url.startsWith("https://") || item.image_url.url.startsWith("data:image/")) &&
-              /\.(jpg|jpeg|png|gif|webp)$/i.test(item.image_url.url)
+              item.image_url.url.startsWith("data:image/")
             ) {
               return true;
             }
@@ -113,11 +126,9 @@ router.post("/", (req, res) => {
         }
       });
 
-      // הדפסת debug למעקב
       console.log("📤 messages שנשלחות ל־OpenAI:");
       console.dir(messages, { depth: null });
 
-      // בקשת OpenAI
       const response = await openai.chat.completions.create({
         model: image ? "gpt-4o" : "gpt-4",
         messages,
