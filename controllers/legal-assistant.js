@@ -64,12 +64,7 @@ router.post("/", (req, res) => {
               if (msg.prompt) {
                 content.push({ type: "text", text: msg.prompt });
               }
-              if (
-                msg.imageUrl &&
-                typeof msg.imageUrl === "string" &&
-                (msg.imageUrl.startsWith("https://") || msg.imageUrl.startsWith("data:image/")) &&
-                /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.imageUrl)
-              ) {
+              if (isValidImageUrl(msg.imageUrl)) {
                 content.push({ type: "image_url", image_url: { url: msg.imageUrl } });
               }
               if (content.length > 0) {
@@ -99,8 +94,27 @@ router.post("/", (req, res) => {
         messages.push({ role: "user", content: contentArray });
       }
 
+      // סינון נוסף לכל הודעה לפני שליחה ל-OpenAI
+      messages.forEach((msg) => {
+        if (Array.isArray(msg.content)) {
+          msg.content = msg.content.filter((item) => {
+            if (item.type === "text") return true;
+            if (
+              item.type === "image_url" &&
+              item.image_url &&
+              typeof item.image_url.url === "string" &&
+              (item.image_url.url.startsWith("https://") || item.image_url.url.startsWith("data:image/")) &&
+              /\.(jpg|jpeg|png|gif|webp)$/i.test(item.image_url.url)
+            ) {
+              return true;
+            }
+            return false;
+          });
+        }
+      });
+
       // הדפסת debug למעקב
-      console.log("\uD83D\uDCE4 messages שנשלחות ל־OpenAI:");
+      console.log("📤 messages שנשלחות ל־OpenAI:");
       console.dir(messages, { depth: null });
 
       // בקשת OpenAI
