@@ -25,7 +25,6 @@ router.post("/", (req, res) => {
     try {
       const messages = [];
 
-      // ⬇️ הוספת הודעת מערכת
       messages.push({
         role: "system",
         content: `אתה עורך דין מומחה לדיני זכויות יוצרים, סימני מסחר וקניין רוחני לפי הדין בישראל, ארצות הברית והאיחוד האירופי.
@@ -42,10 +41,9 @@ router.post("/", (req, res) => {
 3. אם צורפה תמונה או לינק למדיה – נתח את התוכן החזותי (למשל לוגואים, סגנון עיצוב, דמויות מזוהות, תווי פנים, צבעים מזוהים עם מותג וכו').
 
 ענה כאילו אתה עורך דין אנושי שמסביר בשפה פשוטה לצוות שיווק/פרסום.
-אם לא ניתן לחוות דעה משפטית, הסבר מדוע ואילו פרטים חסרים.`,
+אם לא ניתן לחוות דעה משפטית, הסבר מדוע ואילו פרטים חסרים.`
       });
 
-      // ⬇️ שחזור ההיסטוריה ממחרוזת (אם קיימת)
       if (historyRaw) {
         try {
           const history = JSON.parse(historyRaw);
@@ -62,16 +60,17 @@ router.post("/", (req, res) => {
         }
       }
 
-      // ⬇️ הודעה חדשה
-      const newUserMessage = {
-        role: "user",
-        content: [
-          ...(prompt ? [{ type: "text", text: String(prompt) }] : []),
-          ...(image ? [{ type: "image_url", image_url: { url: String(image) } }] : []),
-        ],
-      };
+      const content = image
+        ? [
+            ...(prompt ? [{ type: "text", text: String(prompt) }] : []),
+            ...(image ? [{ type: "image_url", image_url: { url: String(image) } }] : []),
+          ]
+        : String(prompt);
 
-      messages.push(newUserMessage);
+      messages.push({
+        role: "user",
+        content,
+      });
 
       const response = await openai.chat.completions.create({
         model: image ? "gpt-4o" : "gpt-4",
