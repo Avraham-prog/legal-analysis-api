@@ -16,16 +16,19 @@ router.post("/", (req, res) => {
 
     const prompt = fields.prompt;
     const image = fields.image;
+    const historyRaw = fields.history;
 
     if (!prompt && !image) {
       return res.status(400).json({ error: "Missing prompt or image" });
     }
 
     try {
-      const messages = [
-        {
-          role: "system",
-          content: `אתה עורך דין מומחה לדיני זכויות יוצרים, סימני מסחר וקניין רוחני לפי הדין בישראל, ארצות הברית והאיחוד האירופי.
+      const messages = [];
+
+      // ⬇️ הוספת הודעת מערכת
+      messages.push({
+        role: "system",
+        content: `אתה עורך דין מומחה לדיני זכויות יוצרים, סימני מסחר וקניין רוחני לפי הדין בישראל, ארצות הברית והאיחוד האירופי.
 
 המטרה שלך היא לבדוק האם יש בעיה משפטית כלשהי בשימוש בתוכן המתואר בשאלה או בתמונה המצורפת, כגון:
 - הפרת זכויות יוצרים (copy infringement)
@@ -40,15 +43,35 @@ router.post("/", (req, res) => {
 
 ענה כאילו אתה עורך דין אנושי שמסביר בשפה פשוטה לצוות שיווק/פרסום.
 אם לא ניתן לחוות דעה משפטית, הסבר מדוע ואילו פרטים חסרים.`,
-        },
-        {
-          role: "user",
-          content: [
-            ...(prompt ? [{ type: "text", text: String(prompt) }] : []),
-            ...(image ? [{ type: "image_url", image_url: { url: String(image) } }] : [])
-          ]
+      });
+
+      // ⬇️ שחזור ההיסטוריה ממחרוזת (אם קיימת)
+      if (historyRaw) {
+        try {
+          const history = JSON.parse(historyRaw);
+          history.forEach((msg) => {
+            if (msg.type === "user" || msg.type === "bot") {
+              messages.push({
+                role: msg.type === "user" ? "user" : "assistant",
+                content: msg.type === "user" ? msg.prompt : msg.response,
+              });
+            }
+          });
+        } catch (e) {
+          console.warn("⚠️ שגיאה בפירוק ההיסטוריה:", e.message);
         }
-      ];
+      }
+
+      // ⬇️ הודעה חדשה
+      const newUserMessage = {
+        role: "user",
+        content: [
+          ...(prompt ? [{ type: "text", text: String(prompt) }] : []),
+          ...(image ? [{ type: "image_url", image_url: { url: String(image) } }] : []),
+        ],
+      };
+
+      messages.push(newUserMessage);
 
       const response = await openai.chat.completions.create({
         model: image ? "gpt-4o" : "gpt-4",
