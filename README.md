@@ -9,7 +9,7 @@
 npm install
 ```
 
-2. הוסף קובץ `.env` עם הערכים:
+2. הוסף קובץ `.env` עם הערכים (שני המפתחות חובה):
 ```
 OPENAI_API_KEY=...
 LEGAL_ANALYSIS_API_KEY=...
