@@ -1,8 +1,3 @@
-
----
-
-**controllers/legal-assistant.js**
-```javascript
 const express = require("express");
 const router = express.Router();
 const { IncomingForm } = require("formidable");
