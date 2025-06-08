@@ -6,14 +6,16 @@ const axios = require("axios");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// בדיקת כתובת תמונה חוקית
 const isValidImageUrl = (url) => {
   return (
     typeof url === "string" &&
     url.startsWith("https://") &&
-    /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(url)
+    /\.(jpg|jpeg|png|gif|webp)$/i.test(url)
   );
 };
 
+// המרת כתובת תמונה ל־base64
 const fetchImageAsBase64 = async (url) => {
   try {
     const response = await axios.get(url, { responseType: "arraybuffer" });
@@ -26,21 +28,14 @@ const fetchImageAsBase64 = async (url) => {
   }
 };
 
+// בדיקה אם יש תמונה בהודעות
 const messageHasImage = (messages) => {
-  return messages.some((msg) =>
-    Array.isArray(msg.content) &&
-    msg.content.some((item) => item.type === "image_url")
+  return messages.some(
+    (msg) =>
+      Array.isArray(msg.content) &&
+      msg.content.some((item) => item.type === "image_url")
   );
 };
-
-router.use((req, res, next) => {
-  const auth = req.get('Authorization') || '';
-  const token = auth.replace(/^Bearer\s+/i, '').trim();
-  if (token !== process.env.LEGAL_ANALYSIS_API_KEY) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  next();
-});
 
 router.post("/", (req, res) => {
   const form = new IncomingForm({ multiples: false });
@@ -62,6 +57,7 @@ router.post("/", (req, res) => {
     try {
       const messages = [];
 
+      // הגדרת SYSTEM
       messages.push({
         role: "system",
         content: `אתה עורך דין מומחה לדיני זכויות יוצרים, סימני מסחר וקניין רוחני לפי הדין בישראל, ארצות הברית והאיחוד האירופי.
@@ -81,11 +77,12 @@ router.post("/", (req, res) => {
 אם לא ניתן לחוות דעה משפטית, הסבר מדוע ואילו פרטים חסרים.`
       });
 
+      // פירוק היסטוריה
       if (historyRaw) {
         try {
           const history = JSON.parse(historyRaw);
           for (const msg of history) {
-            if (msg.type === "user") {
+            if (msg?.type === "user") {
               const content = [];
               if (msg.prompt) {
                 content.push({ type: "text", text: msg.prompt });
@@ -99,7 +96,7 @@ router.post("/", (req, res) => {
               if (content.length > 0) {
                 messages.push({ role: "user", content });
               }
-            } else if (msg.type === "bot" && msg.response) {
+            } else if (msg?.type === "bot" && msg.response) {
               messages.push({ role: "assistant", content: msg.response });
             }
           }
@@ -108,6 +105,7 @@ router.post("/", (req, res) => {
         }
       }
 
+      // הודעה נוכחית
       const contentArray = [];
 
       if (prompt) {
@@ -125,6 +123,7 @@ router.post("/", (req, res) => {
         messages.push({ role: "user", content: contentArray });
       }
 
+      // סינון נוסף לניקוי בעיות
       messages.forEach((msg) => {
         if (Array.isArray(msg.content)) {
           msg.content = msg.content.filter((item) => {
@@ -145,6 +144,7 @@ router.post("/", (req, res) => {
       console.log("📤 messages שנשלחות ל־OpenAI:");
       console.dir(messages, { depth: null });
 
+      // בחירת המודל לפי האם יש תמונה
       const useGpt4o = messageHasImage(messages);
 
       const response = await openai.chat.completions.create({
