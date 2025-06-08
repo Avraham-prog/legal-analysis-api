@@ -10,7 +10,7 @@ const isValidImageUrl = (url) => {
   return (
     typeof url === "string" &&
     url.startsWith("https://") &&
-    /\.(jpg|jpeg|png|gif|webp)$/i.test(url)
+    /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(url)
   );
 };
 
