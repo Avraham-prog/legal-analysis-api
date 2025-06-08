@@ -6,6 +6,10 @@ const legalAssistantRouter = require('./controllers/legal-assistant');
 
 dotenv.config();
 
+if (!process.env.OPENAI_API_KEY) {
+  throw new Error('OPENAI_API_KEY environment variable is not set');
+}
+
 if (!process.env.LEGAL_ANALYSIS_API_KEY) {
   throw new Error('LEGAL_ANALYSIS_API_KEY environment variable is not set');
 }
