@@ -6,6 +6,10 @@ const legalAssistantRouter = require('./controllers/legal-assistant');
 
 dotenv.config();
 
+if (!process.env.LEGAL_ANALYSIS_API_KEY) {
+  throw new Error('LEGAL_ANALYSIS_API_KEY environment variable is not set');
+}
+
 const app = express();
 
 const allowedOrigins = [
@@ -16,7 +20,6 @@ const allowedOrigins = [
   'https://copyright-checker-3qgp4a7qy-avrahams-projects-793b488c.vercel.app',
   'https://copyright-checker-kmkhkrqc9-avrahams-projects-793b488c.vercel.app'
 ];
-
 
 app.use(
   cors({
