@@ -1,3 +1,8 @@
+
+---
+
+**controllers/legal-assistant.js**
+```javascript
 const express = require("express");
 const router = express.Router();
 const { IncomingForm } = require("formidable");
@@ -32,6 +37,15 @@ const messageHasImage = (messages) => {
     msg.content.some((item) => item.type === "image_url")
   );
 };
+
+router.use((req, res, next) => {
+  const auth = req.get('Authorization') || '';
+  const token = auth.replace(/^Bearer\s+/i, '').trim();
+  if (token !== process.env.LEGAL_ANALYSIS_API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+});
 
 router.post("/", (req, res) => {
   const form = new IncomingForm({ multiples: false });
