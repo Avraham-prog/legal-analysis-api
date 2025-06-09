@@ -46,7 +46,7 @@ app.use(
 app.use(express.json());
 
 // כאן החיבורים לפי הארכיטקטורה החדשה:
-const legalAssistantRouter = require('./routes/legal-assistant');
+const legalAssistantRouter = require('./controllers/legal-assistant');
 const analyzeImageRouter = require('./routes/analyze-image');
 
 app.use('/api/legal-assistant', legalAssistantRouter);
