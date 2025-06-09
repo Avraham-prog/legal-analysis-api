@@ -1,11 +1,11 @@
-// index.js (CommonJS style)
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const legalAssistantRouter = require('./controllers/legal-assistant');
 
+// טוען משתני סביבה
 dotenv.config();
 
+// בדיקות משתני סביבה
 if (!process.env.OPENAI_API_KEY) {
   throw new Error('OPENAI_API_KEY environment variable is not set');
 }
@@ -16,6 +16,7 @@ if (!process.env.LEGAL_ANALYSIS_API_KEY) {
 
 const app = express();
 
+// CORS מאובטח
 const allowedOrigins = [
   'https://copyright-checker.vercel.app',
   'https://copyright-checker-p8on364h-avrahams-projects-793b488c.vercel.app',
@@ -41,8 +42,15 @@ app.use(
   })
 );
 
+// תמיכה ב־JSON בגוף הבקשה
 app.use(express.json());
+
+// כאן החיבורים לפי הארכיטקטורה החדשה:
+const legalAssistantRouter = require('./routes/legal-assistant');
+const analyzeImageRouter = require('./routes/analyze-image');
+
 app.use('/api/legal-assistant', legalAssistantRouter);
+app.use('/api/analyze-image', analyzeImageRouter);
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
