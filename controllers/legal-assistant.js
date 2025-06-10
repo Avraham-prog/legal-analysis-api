@@ -40,6 +40,8 @@ const messageHasImage = (messages) => {
   );
 };
 
+const lastImageBySession = new Map();
+
 router.post("/", (req, res) => {
   const form = new IncomingForm({ multiples: false });
 
@@ -56,6 +58,7 @@ router.post("/", (req, res) => {
     const rawImage = fields.image;
     const image = typeof rawImage === "string" ? rawImage.trim() : null;
     const historyRaw = fields.history;
+    const sessionId = fields.sessionId || "default";
 
     if (!prompt && !image) {
       return res.status(400).json({ error: "Missing prompt or image" });
@@ -83,7 +86,7 @@ router.post("/", (req, res) => {
 אם לא ניתן לחוות דעה משפטית, הסבר מדוע ואילו פרטים חסרים.`
       });
 
-      let lastImageUrl = null;
+      let lastImageUrl = lastImageBySession.get(sessionId) || null;
 
       if (historyRaw) {
         try {
@@ -96,6 +99,7 @@ router.post("/", (req, res) => {
               }
               if (isValidImageUrl(msg.imageUrl)) {
                 lastImageUrl = msg.imageUrl;
+                lastImageBySession.set(sessionId, msg.imageUrl);
                 const base64Image = await fetchImageAsBase64(msg.imageUrl);
                 if (base64Image) {
                   content.push({ type: "image_url", image_url: { url: base64Image } });
@@ -121,6 +125,7 @@ router.post("/", (req, res) => {
       let imageToUse = null;
       if (isValidImageUrl(image)) {
         imageToUse = await fetchImageAsBase64(image);
+        lastImageBySession.set(sessionId, image);
       } else if (isValidImageUrl(lastImageUrl)) {
         imageToUse = await fetchImageAsBase64(lastImageUrl);
       }
