@@ -1,3 +1,4 @@
+// legal-assistant.js – גרסה מלאה מתוקנת עם דיבאג, תמונה אחרונה, וזיהוי מדויק למודל GPT-4o
 const express = require("express");
 const router = express.Router();
 const { IncomingForm } = require("formidable");
@@ -28,12 +29,18 @@ const fetchImageAsBase64 = async (url) => {
   }
 };
 
-// בדיקה אם יש תמונה בהודעות
+// בדיקה אם קיימת תמונה בתוך ההודעות (בפורמט base64)
 const messageHasImage = (messages) => {
   return messages.some(
     (msg) =>
       Array.isArray(msg.content) &&
-      msg.content.some((item) => item.type === "image_url")
+      msg.content.some(
+        (item) =>
+          item.type === "image_url" &&
+          item.image_url &&
+          typeof item.image_url.url === "string" &&
+          item.image_url.url.startsWith("data:image/")
+      )
   );
 };
 
@@ -77,6 +84,8 @@ router.post("/", (req, res) => {
 אם לא ניתן לחוות דעה משפטית, הסבר מדוע ואילו פרטים חסרים.`
       });
 
+      let lastImageUrl = null;
+
       // פירוק היסטוריה
       if (historyRaw) {
         try {
@@ -88,6 +97,7 @@ router.post("/", (req, res) => {
                 content.push({ type: "text", text: msg.prompt });
               }
               if (isValidImageUrl(msg.imageUrl)) {
+                lastImageUrl = msg.imageUrl;
                 const base64Image = await fetchImageAsBase64(msg.imageUrl);
                 if (base64Image) {
                   content.push({ type: "image_url", image_url: { url: base64Image } });
@@ -105,25 +115,28 @@ router.post("/", (req, res) => {
         }
       }
 
-      // הודעה נוכחית
       const contentArray = [];
-
       if (prompt) {
         contentArray.push({ type: "text", text: String(prompt) });
       }
 
+      // אם נשלחה תמונה חדשה – נשתמש בה, אחרת נשתמש בתמונה האחרונה מהיסטוריה
+      let imageToUse = null;
       if (isValidImageUrl(image)) {
-        const base64Image = await fetchImageAsBase64(image);
-        if (base64Image) {
-          contentArray.push({ type: "image_url", image_url: { url: base64Image } });
-        }
+        imageToUse = await fetchImageAsBase64(image);
+      } else if (lastImageUrl) {
+        imageToUse = await fetchImageAsBase64(lastImageUrl);
+      }
+
+      if (imageToUse) {
+        contentArray.push({ type: "image_url", image_url: { url: imageToUse } });
       }
 
       if (contentArray.length > 0) {
         messages.push({ role: "user", content: contentArray });
       }
 
-      // סינון נוסף לניקוי בעיות
+      // ניקוי – רק תוכן חוקי
       messages.forEach((msg) => {
         if (Array.isArray(msg.content)) {
           msg.content = msg.content.filter((item) => {
@@ -141,11 +154,13 @@ router.post("/", (req, res) => {
         }
       });
 
+      // 🔍 דיבאג
       console.log("📤 messages שנשלחות ל־OpenAI:");
       console.dir(messages, { depth: null });
 
-      // בחירת המודל לפי האם יש תמונה
       const useGpt4o = messageHasImage(messages);
+      console.log("🔍 האם זוהתה תמונה?", useGpt4o);
+      console.log("==> Model selected:", useGpt4o ? "gpt-4o" : "gpt-4");
 
       const response = await openai.chat.completions.create({
         model: useGpt4o ? "gpt-4o" : "gpt-4",
