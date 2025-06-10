@@ -1,4 +1,3 @@
-// legal-assistant.js – גרסה מלאה מתוקנת עם דיבאג, תמונה אחרונה, וזיהוי מדויק למודל GPT-4o
 const express = require("express");
 const router = express.Router();
 const { IncomingForm } = require("formidable");
@@ -7,7 +6,6 @@ const axios = require("axios");
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// בדיקת כתובת תמונה חוקית
 const isValidImageUrl = (url) => {
   return (
     typeof url === "string" &&
@@ -16,7 +14,6 @@ const isValidImageUrl = (url) => {
   );
 };
 
-// המרת כתובת תמונה ל־base64
 const fetchImageAsBase64 = async (url) => {
   try {
     const response = await axios.get(url, { responseType: "arraybuffer" });
@@ -29,7 +26,6 @@ const fetchImageAsBase64 = async (url) => {
   }
 };
 
-// בדיקה אם קיימת תמונה בתוך ההודעות (בפורמט base64)
 const messageHasImage = (messages) => {
   return messages.some(
     (msg) =>
@@ -47,14 +43,18 @@ const messageHasImage = (messages) => {
 router.post("/", (req, res) => {
   const form = new IncomingForm({ multiples: false });
 
-  form.parse(req, async (err, fields) => {
+  form.parse(req, async (err, fields, files) => {
+    console.log("🔍 Fields:", fields);
+    console.log("🔍 Files:", files);
+
     if (err) {
       console.error("Formidable error:", err);
       return res.status(500).json({ error: "Form parsing failed" });
     }
 
     const prompt = fields.prompt;
-    const image = fields.image;
+    const rawImage = fields.image;
+    const image = typeof rawImage === "string" ? rawImage.trim() : null;
     const historyRaw = fields.history;
 
     if (!prompt && !image) {
@@ -64,7 +64,6 @@ router.post("/", (req, res) => {
     try {
       const messages = [];
 
-      // הגדרת SYSTEM
       messages.push({
         role: "system",
         content: `אתה עורך דין מומחה לדיני זכויות יוצרים, סימני מסחר וקניין רוחני לפי הדין בישראל, ארצות הברית והאיחוד האירופי.
@@ -86,7 +85,6 @@ router.post("/", (req, res) => {
 
       let lastImageUrl = null;
 
-      // פירוק היסטוריה
       if (historyRaw) {
         try {
           const history = JSON.parse(historyRaw);
@@ -120,11 +118,10 @@ router.post("/", (req, res) => {
         contentArray.push({ type: "text", text: String(prompt) });
       }
 
-      // אם נשלחה תמונה חדשה – נשתמש בה, אחרת נשתמש בתמונה האחרונה מהיסטוריה
       let imageToUse = null;
       if (isValidImageUrl(image)) {
         imageToUse = await fetchImageAsBase64(image);
-      } else if (lastImageUrl) {
+      } else if (isValidImageUrl(lastImageUrl)) {
         imageToUse = await fetchImageAsBase64(lastImageUrl);
       }
 
@@ -136,7 +133,6 @@ router.post("/", (req, res) => {
         messages.push({ role: "user", content: contentArray });
       }
 
-      // ניקוי – רק תוכן חוקי
       messages.forEach((msg) => {
         if (Array.isArray(msg.content)) {
           msg.content = msg.content.filter((item) => {
@@ -154,7 +150,6 @@ router.post("/", (req, res) => {
         }
       });
 
-      // 🔍 דיבאג
       console.log("📤 messages שנשלחות ל־OpenAI:");
       console.dir(messages, { depth: null });
 
