@@ -43,6 +43,41 @@ const messageHasImage = (messages) => {
 
 const lastImageBySession = new Map();
 
+const getBase64ImageToUse = async (files, image, lastImageUrl, sessionId) => {
+  // 1. File upload
+  if (files.image && files.image.filepath) {
+    try {
+      const buffer = fs.readFileSync(files.image.filepath);
+      const mime = files.image.mimetype || "image/jpeg";
+      console.log("✅ תמונה נטענה מקובץ");
+      return `data:${mime};base64,${buffer.toString("base64")}`;
+    } catch (e) {
+      console.warn("⚠️ שגיאה בקריאת קובץ תמונה:", e.message);
+    }
+  }
+
+  // 2. Direct image URL
+  if (isValidImageUrl(image)) {
+    const base64 = await fetchImageAsBase64(image);
+    if (base64) {
+      lastImageBySession.set(sessionId, image);
+      console.log("✅ תמונה הומרה מ־URL");
+      return base64;
+    }
+  }
+
+  // 3. Use last image
+  if (isValidImageUrl(lastImageUrl)) {
+    const base64 = await fetchImageAsBase64(lastImageUrl);
+    if (base64) {
+      console.log("✅ תמונה מהיסטוריה הומרה ל־base64");
+      return base64;
+    }
+  }
+
+  return null;
+};
+
 router.post("/", (req, res) => {
   const form = new IncomingForm({ multiples: false });
 
@@ -119,37 +154,7 @@ router.post("/", (req, res) => {
       contentArray.push({ type: "text", text: String(prompt) });
     }
 
-    let imageToUse = null;
-
-    // תמונה מקובץ
-    if (files.image && files.image.filepath) {
-      try {
-        const buffer = fs.readFileSync(files.image.filepath);
-        const mime = files.image.mimetype || "image/jpeg";
-        imageToUse = `data:${mime};base64,${buffer.toString("base64")}`;
-        console.log("✅ תמונה נטענה מקובץ");
-      } catch (e) {
-        console.warn("⚠️ שגיאה בקריאת קובץ תמונה:", e.message);
-      }
-    }
-
-    // אם אין קובץ, ננסה מ־URL
-    if (!imageToUse && isValidImageUrl(image)) {
-      imageToUse = await fetchImageAsBase64(image);
-      if (imageToUse) {
-        lastImageBySession.set(sessionId, image);
-        console.log("✅ תמונה הומרה מ־URL");
-      }
-    }
-
-    // אם אין קובץ וגם אין image, נשתמש ב־last
-    if (!imageToUse && isValidImageUrl(lastImageUrl)) {
-      imageToUse = await fetchImageAsBase64(lastImageUrl);
-      if (imageToUse) {
-        console.log("✅ תמונה מהיסטוריה הומרה ל־base64");
-      }
-    }
-
+    const imageToUse = await getBase64ImageToUse(files, image, lastImageUrl, sessionId);
     if (imageToUse) {
       contentArray.push({ type: "image_url", image_url: { url: imageToUse } });
     }
